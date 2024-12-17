@@ -79,6 +79,40 @@ class Model
             return null;
         }
     }
+    public function first($conditions = [], $other = "")
+    {
+        $query = "SELECT * FROM " . $this->table;
+
+        if (!empty($conditions)) {
+            $query .= " WHERE ";
+            $fields = [];
+            foreach ($conditions as $column => $value) {
+                $fields[] = "{$column} = :{$column}";
+            }
+            $query .= implode(" AND ", $fields);
+        }
+        $query .= $other . " LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+
+        foreach ($conditions as $column => $value) {
+            $stmt->bindValue(":{$column}", htmlspecialchars(strip_tags($value)));
+        }
+
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($result) {
+            foreach ($result as $key => $value) {
+                if (property_exists($this, $key)) {
+                    $this->$key = $value;
+                }
+            }
+            return $this;
+        } else {
+            return null;
+        }
+    }
+
     public function count()
     {
         $query = "SELECT COUNT(*) as 'Total' FROM " . $this->table;
@@ -248,11 +282,12 @@ class Model
         // exit();
         return $stmt->fetch();
     }
-    public function belongsToThrough($connectorClass, $connectorKey, $targetClass, $targetForeignKey){
+    public function belongsToThrough($connectorClass, $connectorKey, $targetClass, $targetForeignKey)
+    {
         $connector = $this->belongsTo($connectorClass, $connectorKey);
-        if(!$connector){
-            throw new Exception("No record found in the target model '{$connectorClass}' with id '{$connectorKey}'.");
-
+        if (!$connector) {
+            // throw new Exception("No record found in the target model '{$connectorClass}' with id '{$connectorKey}'.");
+            return null;
         }
         // return true;
         require_once $targetClass . ".php";
@@ -261,7 +296,33 @@ class Model
         $stmt->setFetchMode(PDO::FETCH_CLASS, $targetClass);
         return $stmt->fetch();
     }
-    public function hasMany($relatedClass, $foreignKey) {
+    public function hasManyThrough($connectorClass, $connectorKey, $targetClass, $targetForeignKey)
+    {
+        // Get the connector table name and instantiate the target class
+        require_once $connectorClass . ".php";
+        require_once $targetClass . ".php";
+
+        $connectorInstance = new $connectorClass($this->conn);
+        $targetInstance = new $targetClass($this->conn);
+
+        // Query to get all matching records from the target table through the connector table
+        $stmt = $this->conn->prepare("
+        SELECT target.* 
+        FROM {$connectorInstance->table} AS connector
+        JOIN {$targetInstance->table} AS target 
+        ON connector.{$targetForeignKey} = target.id
+        WHERE connector.{$connectorForeignKey} = :mainId
+    ");
+
+        // Bind the main model's ID to the placeholder
+        $stmt->execute(['mainId' => $this->{$this->primaKey}]);
+        $stmt->setFetchMode(PDO::FETCH_CLASS, $targetClass);
+
+        // Fetch all matching records
+        return $stmt->fetchAll();
+    }
+    public function hasMany($relatedClass, $foreignKey)
+    {
         require_once $relatedClass . ".php";
         if (!isset($this->{$this->primaKey})) {
             throw new Exception("Local key '{$this->primaKey}' is not set in this model.");
@@ -271,6 +332,68 @@ class Model
         $stmt = $this->conn->prepare("SELECT * FROM " . (new $relatedClass($this->conn))->table . " WHERE {$foreignKey} = :localKey");
         $stmt->execute(["localKey" => $this->{$this->primaKey}]);
         return $stmt->fetchAll(PDO::FETCH_CLASS, $relatedClass); // Return all related records as objects
+    }
+    public function graph($column)
+    {
+        // SQL query to get counts by month
+        $applicants = "SELECT DATE_FORMAT({$column}, '%m') AS month, COUNT(*) AS total 
+                       FROM {$this->table}
+                       GROUP BY DATE_FORMAT({$column}, '%m') 
+                       ORDER BY DATE_FORMAT({$column}, '%m')";
+        $queApplicants = $this->conn->prepare($applicants);
+        $queApplicants->execute();
+
+        // Array of all months
+        $allMonths = [
+            '01' => 'January',
+            '02' => 'February',
+            '03' => 'March',
+            '04' => 'April',
+            '05' => 'May',
+            '06' => 'June',
+            '07' => 'July',
+            '08' => 'August',
+            '09' => 'September',
+            '10' => 'October',
+            '11' => 'November',
+            '12' => 'December'
+        ];
+
+        // Initialize arrays
+        $appData = array_fill_keys(array_keys($allMonths), 0); // Fill with 0
+        $appLabel = $allMonths; // Labels
+
+        // Fetch and populate data
+        while ($item = $queApplicants->fetch(PDO::FETCH_ASSOC)) {
+            $monthNumber = $item['month'];
+            $appData[$monthNumber] = (int) $item['total'];
+        }
+
+        return ['data' => array_values($appData), 'label' => array_values($appLabel)];
+    }
+    public function pgraph($groupBy)
+    {
+        $query = "SELECT COUNT(*) as total, {$groupBy} as grouping FROM {$this->table} GROUP BY {$groupBy}";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+
+        $data = [];
+        $label = [];
+
+        // Fetch results and store them in $data and $label arrays
+        while ($item = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $data[] = (int) $item['total'];
+            $label[] = $item['grouping'] == '' ? 'Unknown' : ucfirst($item['grouping']);
+        }
+
+        // If no data found, return default values
+        if (empty($data)) {
+            $data = [0];
+            $label = ['No data'];
+        }
+
+        // Return the data and labels
+        return ['data' => $data, 'label' => $label];
     }
     // Add other common methods here (e.g., create, update, delete)
 }
