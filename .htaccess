@@ -7,7 +7,7 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ index.php [L,QSA]
 
 # Block direct access to specific folders (e.g., "models", "controllers", "views")
-RewriteRule ^(app|config|public|storage) - [F,L]
+RewriteRule ^(app|config|storage) - [F,L]
 
 # Block access to any .php files outside of index.php
 RewriteCond %{REQUEST_URI} !index\.php$
@@ -15,3 +15,5 @@ RewriteRule ^.*\.php$ - [F,L]
 
 # Deny access to hidden files (files starting with .)
 RewriteRule "(^|/)\." - [F]
+
+Options -Indexes
