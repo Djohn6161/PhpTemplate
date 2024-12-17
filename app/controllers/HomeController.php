@@ -1,5 +1,5 @@
 <?php
-class HomeController {
+class HomeController extends Controller {
     public function index(){
         // echo $id . __DIR__;
         require __DIR__ . "/../../public/views/index.php";
