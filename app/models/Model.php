@@ -14,7 +14,7 @@ class Model
     public function allExcept($conditions = [])
     {
         $query = "SELECT * FROM " . $this->table;
-
+    
         if (!empty($conditions)) {
             $query .= " WHERE ";
             $fields = [];
@@ -23,18 +23,21 @@ class Model
             }
             $query .= implode(" AND ", $fields);
         }
-
+    
         $stmt = $this->conn->prepare($query);
-
+    
         foreach ($conditions as $column => $value) {
             $stmt->bindValue(":{$column}", htmlspecialchars(strip_tags($value)));
         }
-
+    
         $stmt->execute();
-        $data = $stmt->fetchAll(PDO::FETCH_OBJ);
-
+    
+        // Fetch results as objects of the current class
+        $data = $stmt->fetchAll(PDO::FETCH_CLASS, static::class);
+    
         return $data;
     }
+    
     public function all($conditions = [], $limit = "")
     {
         $query = "SELECT * FROM " . $this->table;
@@ -48,6 +51,7 @@ class Model
             $query .= implode(" AND ", $fields);
         }
         $query .= $limit;
+
         $stmt = $this->conn->prepare($query);
 
         foreach ($conditions as $column => $value) {
@@ -55,10 +59,13 @@ class Model
         }
 
         $stmt->execute();
-        $data = $stmt->fetchAll(PDO::FETCH_OBJ);
+
+        // Fetch results as objects of the current class
+        $data = $stmt->fetchAll(PDO::FETCH_CLASS, static::class);
 
         return $data;
     }
+
     public function findById($id)
     {
         $query = "SELECT * FROM " . $this->table . " WHERE " . $this->primaKey . " = :id";
