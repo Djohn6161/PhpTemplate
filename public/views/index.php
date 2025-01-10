@@ -1,7 +1,7 @@
 <?php
-require __DIR__ . "template/header.php";
-require __DIR__ . "template/topbar.php";
-require __DIR__ . "template/navbar.php";
+require __DIR__ . "/template/header.php";
+require __DIR__ . "/template/topbar.php";
+require __DIR__ . "/template/navbar.php";
 ?>
 <!-- Page Sidebar Ends-->
 <div class="page-body">
