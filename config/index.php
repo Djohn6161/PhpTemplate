@@ -24,6 +24,16 @@ function assets($path = '') {
     // Append the "public" folder if your assets are stored there
     return $basePath . '/pms/public/' . ltrim($path, '/');
 }
+// require __DIR__ . "/../app/Models/Employee.php";
+
+// $Employee = new Employee($pdo);
+// $loginInfo = $Employee->findById("1");
+$_SESSION['id'] = 1;
+$_SESSION['name'] = "Don John Daryl Curativo";
+$_SESSION['age'] = "23";
+$_SESSION['type'] = 1;
+$_SESSION['department'] = 1;
+$_SESSION['position'] = "Web Developer";
 
 $basePath = "/";
 ?>
