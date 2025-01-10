@@ -22,7 +22,7 @@ function assets($path = '') {
     $basePath = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'];
 
     // Append the "public" folder if your assets are stored there
-    return $basePath . '/pms/public/' . ltrim($path, '/');
+    return $basePath . '/phpTemplate/public/' . ltrim($path, '/');
 }
 // require __DIR__ . "/../app/Models/Employee.php";
 

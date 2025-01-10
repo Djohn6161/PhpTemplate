@@ -1,0 +1,53 @@
+.kpi-hover:hover{
+    background-color: #168eea !important;
+    color: #fff;
+}
+.kpi-hover {
+    height: 100px; /* or the desired height */
+    overflow: hidden;          /* Hides overflowing content */
+    text-overflow: ellipsis;   /* Adds the ellipsis (...) */
+    display: -webkit-box;      /* Required for limiting the number of lines */
+    -webkit-line-clamp: 3;     /* Limits to 3 lines (change this value as needed) */
+    -webkit-box-orient: vertical; /* Required for the ellipsis on multi-lines */
+}
+.higatloper{
+    background-color: #f7f0c9 !important;
+    color: #000000;
+}
+.lowathigper{
+    background-color: #e68992 !important;
+    color: #000000;
+}
+.higathiper{
+    background-color: #287144 !important;
+    color: #fff;
+}
+.lowatloper{
+    background-color: #d74654 !important;
+    color: #fff;
+}
+
+.higatloper:hover{
+    color: #000000 !important;
+    border: #e4ca43 1px solid  !important;
+    background-color: #e4ca43 !important;
+    cursor: pointer; 
+}
+.lowathigper:hover{
+    color: #000000 !important;
+    border: #b4434c 1px solid  !important;
+    background-color: #b4434c !important;
+    cursor: pointer; 
+}
+.higathiper:hover{
+    background-color: #09682f !important;
+    border: #09682f 1px solid  !important;
+    cursor: pointer; 
+    color: #ffffff;
+}
+.lowatloper:hover{
+    background-color: #da0f24 !important;
+    border: #da0f24 1px solid  !important;
+    cursor: pointer; 
+    color: #fff;
+}
