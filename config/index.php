@@ -17,4 +17,13 @@ try {
     echo "Connection failed: " . $e->getMessage();
     exit();
 }
+function assets($path = '') {
+    // Get the root directory of the project
+    $basePath = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'];
+
+    // Append the "public" folder if your assets are stored there
+    return $basePath . '/pms/public/' . ltrim($path, '/');
+}
+
+$basePath = "/";
 ?>

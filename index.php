@@ -3,7 +3,7 @@ require_once __DIR__ . '/config/index.php';
 require_once __DIR__ . '/routes/web.php';
 
 // Get and parse the URI
-$uri = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
+$uri = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), $basePath);
 $segments = explode('/', $uri);
 
 // Build the route key from the segments
