@@ -129,7 +129,7 @@ class Model
         // echo $query;
         return $res['Total'];
     }
-    public function deleteFile($filename, $uploadDir = '../../controls/uploads/')
+    public function deleteFile($filename, $uploadDir = __DIR__ . "/../../public/storage/")
     {
         try {
             // Check if filename is empty or null
@@ -159,7 +159,7 @@ class Model
             return false; // Return false to handle the error gracefully
         }
     }
-    public function saveFile($tempname, $originalFilename, $uploadDir = '../../controls/uploads/')
+    public function saveFile($tempname, $originalFilename, $uploadDir = __DIR__ . "/../../public/storage/")
     {
         // Extract file extension
         $fileExtension = pathinfo($originalFilename, PATHINFO_EXTENSION);

@@ -1,4 +1,5 @@
 <?php
+session_start();
 require_once __DIR__ . '/config/index.php';
 require_once __DIR__ . '/routes/web.php';
 
