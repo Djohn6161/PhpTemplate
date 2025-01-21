@@ -14,7 +14,7 @@ class Model
     public function allExcept($conditions = [])
     {
         $query = "SELECT * FROM " . $this->table;
-    
+
         if (!empty($conditions)) {
             $query .= " WHERE ";
             $fields = [];
@@ -23,21 +23,23 @@ class Model
             }
             $query .= implode(" AND ", $fields);
         }
-    
+
         $stmt = $this->conn->prepare($query);
-    
+
         foreach ($conditions as $column => $value) {
             $stmt->bindValue(":{$column}", htmlspecialchars(strip_tags($value)));
         }
-    
+
         $stmt->execute();
-    
+
         // Fetch results as objects of the current class
         $data = $stmt->fetchAll(PDO::FETCH_CLASS, static::class);
-    
+        foreach ($data as $record) {
+            $record->conn = $this->conn; // Pass the connection
+        }
         return $data;
     }
-    
+
     public function all($conditions = [], $limit = "")
     {
         $query = "SELECT * FROM " . $this->table;
@@ -62,7 +64,9 @@ class Model
 
         // Fetch results as objects of the current class
         $data = $stmt->fetchAll(PDO::FETCH_CLASS, static::class);
-
+        foreach ($data as $record) {
+            $record->conn = $this->conn; // Pass the connection
+        }
         return $data;
     }
 
