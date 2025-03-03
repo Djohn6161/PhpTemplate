@@ -4,13 +4,18 @@ class Model
     protected $conn;
     protected $table;
     protected $primaKey = "id";
+    protected $basePath;
+    // protected $queryBuilder = [];
 
     public function __construct($conn, $table, $primaKey = 'id')
     {
+
         $this->conn = $conn;
+        $this->basePath = "/pms/";
         $this->table = $table;
         $this->primaKey = $primaKey;
     }
+
     public function allExcept($conditions = [])
     {
         $query = "SELECT * FROM " . $this->table;
@@ -34,13 +39,12 @@ class Model
 
         // Fetch results as objects of the current class
         $data = $stmt->fetchAll(PDO::FETCH_CLASS, static::class);
-        foreach ($data as $record) {
-            $record->conn = $this->conn; // Pass the connection
+        foreach ($data as $object) {
+            $object->conn = $this->conn; // Pass the connection to each object
         }
         return $data;
     }
-
-    public function all($conditions = [], $limit = "")
+    public function all($conditions = [], $limit = "", $mode = "string")
     {
         $query = "SELECT * FROM " . $this->table;
 
@@ -48,57 +52,141 @@ class Model
             $query .= " WHERE ";
             $fields = [];
             foreach ($conditions as $column => $value) {
-                $fields[] = "{$column} = :{$column}";
+                if (is_array($value)) {
+                    // If value is an array, use the operator and value
+                    [$operator, $val] = $value;
+                    if ($mode == "column") {
+                        $fields[] = "{$column} {$operator} {$val}";
+                    } else {
+                        $fields[] = "{$column} {$operator} :{$column}";
+                    }
+                } else {
+                    // Default to "=" for key-value pairs
+                    $fields[] = "{$column} = :{$column}";
+                }
             }
             $query .= implode(" AND ", $fields);
         }
         $query .= $limit;
 
-        $stmt = $this->conn->prepare($query);
+        // Prepare the query
+        $stmt = $mode == "column" ? $this->conn->query($query) : $this->conn->prepare($query);
 
-        foreach ($conditions as $column => $value) {
-            $stmt->bindValue(":{$column}", htmlspecialchars(strip_tags($value)));
+        // Bind the condition values if mode is "string"
+        if ($mode != "column") {
+            foreach ($conditions as $column => $value) {
+                if (is_array($value)) {
+                    [$operator, $val] = $value;
+                    $stmt->bindValue(":{$column}", htmlspecialchars(strip_tags($val)));
+                } else {
+                    $stmt->bindValue(":{$column}", htmlspecialchars(strip_tags($value)));
+                }
+            }
         }
 
         $stmt->execute();
 
         // Fetch results as objects of the current class
         $data = $stmt->fetchAll(PDO::FETCH_CLASS, static::class);
-        foreach ($data as $record) {
-            $record->conn = $this->conn; // Pass the connection
+
+        // Ensure each object has the connection set
+        foreach ($data as $object) {
+            $object->conn = $this->conn;
         }
+
+        return $data;
+    }
+    public function allIn($conditions = [], $limit = "", $mode = "string")
+    {
+        $query = "SELECT * FROM " . $this->table;
+        $params = [];
+
+        if (!empty($conditions)) {
+            $whereClauses = [];
+
+            foreach (['AND', 'OR'] as $logic) {
+                if (!isset($conditions[$logic]) || !is_array($conditions[$logic])) {
+                    continue;
+                }
+
+                $groupClauses = [];
+
+                foreach ($conditions[$logic] as $condition) {
+                    if (isset($condition['column'])) {
+                        $column = $condition['column'];
+
+                        if (isset($condition['subquery']) && $condition['subquery'] === true) {
+                            // Handle subqueries
+                            $groupClauses[] = "{$column} IN ({$condition['query']})";
+                        } elseif (isset($condition['operator']) && isset($condition['value'])) {
+                            // Handle conditions with operators
+                            $paramKey = "{$column}_" . count($params);
+                            $groupClauses[] = "{$column} {$condition['operator']} :{$paramKey}";
+                            $params[$paramKey] = htmlspecialchars(strip_tags($condition['value']));
+                        }
+                    }
+                }
+
+                if (!empty($groupClauses)) {
+                    $whereClauses[] = "(" . implode(" {$logic} ", $groupClauses) . ")";
+                }
+            }
+
+            if (!empty($whereClauses)) {
+                $query .= " WHERE " . implode(" AND ", $whereClauses);
+            }
+        }
+
+        $query .= $limit;
+
+        
+
+        // Prepare the query
+        $stmt = $mode == "column" ? $this->conn->query($query) : $this->conn->prepare($query);
+
+        // Bind parameters
+        if ($mode != "column") {
+            foreach ($params as $param => $value) {
+                $stmt->bindValue(":{$param}", $value);
+            }
+        }
+        // var_dump($stmt);
+        // exit();
+        $stmt->execute();
+
+        // Fetch results as objects of the current class
+        $data = $stmt->fetchAll(PDO::FETCH_CLASS, static::class);
+
+        // Ensure each object has the connection set
+        foreach ($data as $object) {
+            $object->conn = $this->conn;
+        }
+
         return $data;
     }
 
-    public function findById($id)
-    {
-        $query = "SELECT * FROM " . $this->table . " WHERE " . $this->primaKey . " = :id";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
-        $stmt->execute();
 
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($result) {
-            foreach ($result as $key => $value) {
-                if (property_exists($this, $key)) {
-                    $this->$key = $value;
-                }
-            }
-            return $this;
-        } else {
-            return null;
-        }
-    }
-    public function first($conditions = [], $other = "")
+
+    public function first($conditions = [], $other = "", $mode = "string")
     {
         $query = "SELECT * FROM " . $this->table;
-
         if (!empty($conditions)) {
             $query .= " WHERE ";
             $fields = [];
             foreach ($conditions as $column => $value) {
-                $fields[] = "{$column} = :{$column}";
+                if (is_array($value)) {
+                    // If value is an array, use the operator and value
+                    [$operator, $val] = $value;
+                    if ($mode == "column") {
+                        $fields[] = "{$column} {$operator} {$val}";
+                    } else {
+                        $fields[] = "{$column} {$operator} :{$column}";
+                    }
+                } else {
+                    // Default to "=" for key-value pairs
+                    $fields[] = "{$column} = :{$column}";
+                }
             }
             $query .= implode(" AND ", $fields);
         }
@@ -124,6 +212,30 @@ class Model
         }
     }
 
+    public function findById($id)
+    {
+        $query = "SELECT * FROM " . $this->table . " WHERE " . $this->primaKey . " = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($result) {
+            foreach ($result as $key => $value) {
+                if (property_exists($this, $key)) {
+                    $this->$key = $value;
+                }
+            }
+            // var_dump($this);
+            // exit();
+            return $this;
+        } else {
+            return null;
+        }
+    }
+
+
     public function count()
     {
         $query = "SELECT COUNT(*) as 'Total' FROM " . $this->table;
@@ -133,7 +245,7 @@ class Model
         // echo $query;
         return $res['Total'];
     }
-    public function deleteFile($filename, $uploadDir = __DIR__ . "/../../public/storage/")
+    public function deleteFile($filename, $uploadDir = '../../controls/uploads/')
     {
         try {
             // Check if filename is empty or null
@@ -163,7 +275,7 @@ class Model
             return false; // Return false to handle the error gracefully
         }
     }
-    public function saveFile($tempname, $originalFilename, $uploadDir = __DIR__ . "/../../public/storage/")
+    public function saveFile($tempname, $originalFilename, $uploadDir = '../../controls/uploads/')
     {
         // Extract file extension
         $fileExtension = pathinfo($originalFilename, PATHINFO_EXTENSION);
@@ -193,7 +305,7 @@ class Model
         // Loop through all object properties
         foreach ($this as $key => $value) {
             // Exclude private properties like $conn and $table
-            if ($key === 'conn' || $key === 'table' || $key === 'primaKey') continue;
+            if ($key === 'conn' || $key === 'table' || $key === 'primaKey' || $key === 'basePath') continue;
 
             // Only include properties that have been set
             if (isset($this->$key)) {
@@ -233,6 +345,28 @@ class Model
         }
         return false;
     }
+    // public function deletemultip($conditions = ""){
+    //     $query = "DELETE FROM " . $this->table;
+    //     // if (!empty($conditions)) {
+    //     //     $query .= " WHERE ";
+    //     //     $fields = [];
+    //     //     foreach ($conditions as $column => $value) {
+    //     //         $fields[] = "{$column} = :{$column}";
+    //     //     }
+    //     //     $query .= implode(" AND ", $fields);
+    //     // }
+    //     $query .= $conditions;
+    //     $stmt = $this->conn->prepare($query);
+
+    //     foreach ($conditions as $column => $value) {
+    //         $stmt->bindValue(":{$column}", htmlspecialchars(strip_tags($value)));
+    //     }
+    //     if ($stmt->execute()) {
+    //         return true; // Deletion successful
+    //     } else {
+    //         return false; // Deletion failed
+    //     }
+    // }
     public function delete()
     {
         // Create the SQL delete statement
@@ -282,8 +416,11 @@ class Model
     public function belongsTo($relatedClass, $foreignKey)
     {
         require_once $relatedClass . ".php";
+        // var_dump($this->$foreignKey);
+        // exit();
         if (!isset($this->$foreignKey)) {
-            throw new Exception("Foreign key '{$foreignKey}' is not set in this model.");
+            return null;
+            // throw new Exception("Foreign key '{$foreignKey}' is not set in this model.");
         }
         // new $relatedClass($this->conn);
         $stmt = $this->conn->prepare("SELECT * FROM " . (new $relatedClass($this->conn))->table . " WHERE id = :id");
@@ -291,7 +428,11 @@ class Model
         $stmt->setFetchMode(PDO::FETCH_CLASS, $relatedClass);
         // var_dump($this->$foreignKey);
         // exit();
-        return $stmt->fetch();
+        $data = $stmt->fetch();
+        if ($data) {
+            $data->conn = $this->conn;
+        }
+        return $data;
     }
     public function belongsToThrough($connectorClass, $connectorKey, $targetClass, $targetForeignKey)
     {
@@ -316,33 +457,68 @@ class Model
         $connectorInstance = new $connectorClass($this->conn);
         $targetInstance = new $targetClass($this->conn);
 
-        // Query to get all matching records from the target table through the connector table
+        // Assuming $connectorKey is the foreign key in the connector table
+        // that refers to the current model's primary key (usually $this->primaKey)
+
         $stmt = $this->conn->prepare("
         SELECT target.* 
         FROM {$connectorInstance->table} AS connector
         JOIN {$targetInstance->table} AS target 
         ON connector.{$targetForeignKey} = target.id
-        WHERE connector.{$connectorForeignKey} = :mainId
+        WHERE connector.{$connectorKey} = :mainId
     ");
-
+        // var_dump($stmt);
+        // exit();
         // Bind the main model's ID to the placeholder
         $stmt->execute(['mainId' => $this->{$this->primaKey}]);
+        // Set the fetch mode and return all matching records
         $stmt->setFetchMode(PDO::FETCH_CLASS, $targetClass);
-
-        // Fetch all matching records
         return $stmt->fetchAll();
     }
+    public function hasManyToManyThrough($connectorClass, $connectorKey, $targetClass, $targetForeignKey)
+    {
+        // Get the connector table name and instantiate the target class
+        require_once $connectorClass . ".php";
+        require_once $targetClass . ".php";
+
+        $connectorInstance = new $connectorClass($this->conn);
+        $targetInstance = new $targetClass($this->conn);
+
+        // Assuming $connectorKey is the foreign key in the connector table
+        // that refers to the current model's primary key (usually $this->primaKey)
+
+        $stmt = $this->conn->prepare("
+        SELECT target.* 
+        FROM {$connectorInstance->table} AS connector
+        JOIN {$targetInstance->table} AS target 
+        ON target.{$targetForeignKey} = connector.id
+        WHERE connector.{$connectorKey} = :mainId
+    ");
+        // var_dump($stmt);
+        // exit();
+        // Bind the main model's ID to the placeholder
+        $stmt->execute(['mainId' => $this->{$this->primaKey}]);
+        // Set the fetch mode and return all matching records
+        $stmt->setFetchMode(PDO::FETCH_CLASS, $targetClass);
+        return $stmt->fetchAll();
+    }
+
     public function hasMany($relatedClass, $foreignKey)
     {
         require_once $relatedClass . ".php";
         if (!isset($this->{$this->primaKey})) {
             throw new Exception("Local key '{$this->primaKey}' is not set in this model.");
         }
-
+        // var_dump($this->conn);
+        // exit();
         // Query the child model (City) based on the parent model's primary key
         $stmt = $this->conn->prepare("SELECT * FROM " . (new $relatedClass($this->conn))->table . " WHERE {$foreignKey} = :localKey");
         $stmt->execute(["localKey" => $this->{$this->primaKey}]);
-        return $stmt->fetchAll(PDO::FETCH_CLASS, $relatedClass); // Return all related records as objects
+        $data = $stmt->fetchAll(PDO::FETCH_CLASS, $relatedClass);
+        foreach ($data as $object) {
+            $object->conn = $this->conn; // Pass the connection to each object
+        }
+        return $data; // Return all related records as objects
     }
     public function graph($column)
     {
