@@ -36,4 +36,13 @@ $_SESSION['department'] = 1;
 $_SESSION['position'] = "Web Developer";
 
 $basePath = "/";
+require_once __DIR__ . '/../app/models/System.php';
+$System = new System($pdo);
+$system = $System->first(['status' => 1]);
+if(is_null($system)){
+    require_once __DIR__ . "/../app/controllers/SystemController.php";
+    $SysControl = new SystemController();
+    $SysControl->setup();
+    exit();
+}
 ?>
