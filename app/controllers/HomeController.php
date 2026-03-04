@@ -1,11 +1,30 @@
 <?php
 require_once "Controller.php";
-class HomeController extends Controller {
-    public function index(){
+class HomeController extends Controller
+{
+    public function index()
+    {
         // echo $id . __DIR__;
         require __DIR__ . "/../../public/views/index.php";
     }
-    public function index2($id){
+    public function about()
+    {
+        // echo $id . __DIR__;
+        require __DIR__ . "/../../public/views/index.php";
+    }
+    public function contact()
+    {
+        // echo $id . __DIR__;
+        require __DIR__ . "/../../public/views/index.php";
+    }
+    public function logout()
+    {
+
+        require __DIR__ . "/../../public/views/index.php";
+    }
+
+    public function index2($id)
+    {
         // echo $id . __DIR__;
         // echo __DIR__ . "/../public/views/index.php";
 

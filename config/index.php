@@ -37,9 +37,14 @@ $_SESSION['position'] = "Web Developer";
 
 $basePath = "/";
 require_once __DIR__ . '/../app/models/System.php';
+require_once __DIR__ . "/../app/models/User.php";
+$User = new User($pdo);
 $System = new System($pdo);
+$User->createTableIfNotExists();
+$System->createTableIfNotExists();
+$user = $User->first(['status' => 1]);
 $system = $System->first(['status' => 1]);
-if(is_null($system)){
+if(is_null($system) || is_null($user)){
     require_once __DIR__ . "/../app/controllers/SystemController.php";
     $SysControl = new SystemController();
     $SysControl->setup();

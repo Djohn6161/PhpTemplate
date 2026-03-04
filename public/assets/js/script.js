@@ -264,12 +264,17 @@ $(".show-hide").show();
 $(".show-hide span").addClass("show");
 
 $(".show-hide span").click(function () {
+  console.log('click');
+  
   if ($(this).hasClass("show")) {
     $('input[name="login[password]"]').attr("type", "text");
     $(this).removeClass("show");
+    $(this).addClass("hide");
   } else {
     $('input[name="login[password]"]').attr("type", "password");
+    $(this).removeClass("hide");
     $(this).addClass("show");
+    
   }
 });
 $('form button[type="submit"]').on("click", function () {

@@ -12,7 +12,7 @@ class Controller
         global $pdo;
         global $basePath;
         $this->pdo = $pdo;
-        $this->basePath = "/pms/";
+        $this->basePath = "/phpTemplate/";
     }
     public function KPIlevels()
     {
@@ -190,5 +190,12 @@ class Controller
             ?>
         </script>
 <?php
+    }
+    public function test_input($data)
+    {
+        $data = trim($data);
+        $data = stripslashes($data);
+        $data = htmlspecialchars($data);
+        return $data;
     }
 }

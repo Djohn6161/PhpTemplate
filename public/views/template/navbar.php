@@ -45,13 +45,13 @@
                       ><i data-feather="home"></i><span>Dashboard</span></a
                     >
                   </li>
-                  <li class="dropdown">
+                  <!-- <li class="dropdown">
                     <a
                       class="nav-link menu-title link-nav <?= $active == "quarterly" ? "active" : ""?>"
                       href="<?=$this->basePath?>quarterlyPMS"
                       ><i data-feather="book"></i><span>Quarterly PMS</span></a
                     >
-                  </li>
+                  </li> -->
                  <?php
                   if($_SESSION['type'] == "2"){
                  ?>

@@ -11,7 +11,7 @@ class Model
     {
 
         $this->conn = $conn;
-        $this->basePath = "/pms/";
+        $this->basePath = "/phpTemplate/";
         $this->table = $table;
         $this->primaKey = $primaKey;
     }

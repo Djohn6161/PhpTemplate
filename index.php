@@ -11,6 +11,7 @@ $segments = explode('/', $uri);
 
 // Build the route key from the segments
 $routeKey = implode('/', array_slice($segments, 1)); // Get all segments except the first one
+// var_dump($routes);
 // var_dump($routeKey);
 // exit();
 
@@ -23,6 +24,9 @@ foreach ($routes as $routePattern => $route) {
     $pattern = preg_replace('/\{(\w+)\}/', '([^/]+)', $routePattern);
     // var_dump("#^$pattern$#");
     // exit(); 
+
+    // var_dump($routeKey);
+    // var_dump($route);
     if (preg_match("#^$pattern$#", $routeKey, $matches)) {
         array_shift($matches); // Remove the full match from the array
         $params = $matches; // Remaining matches are the parameters
@@ -36,7 +40,7 @@ foreach ($routes as $routePattern => $route) {
         // Instantiate the controller and call the method with parameters
         $controller = new $controllerName();
         call_user_func_array([$controller, $methodName], $params);
-        
+
         $routeMatched = true; // Set the flag that a route was matched
         break; // Exit the loop once a match is found
     }

@@ -9329,7 +9329,7 @@ html {
     font-size: 13px;
     color: #168eea;
   }
-  .show-hide span .show-hide span:before {
+  .show-hide span.hide:before {
     content: "hide";
   }
   .show-hide span.show:before {
